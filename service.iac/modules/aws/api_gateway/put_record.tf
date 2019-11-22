@@ -1,21 +1,24 @@
 resource "aws_api_gateway_resource" "record" {
-  rest_api_id = aws_api_gateway_rest_api.kinesis_proxy.id
-  parent_id   = aws_api_gateway_resource.stream.id
+  for_each    = { for k, v in var.service_apps : k => v }
+  rest_api_id = aws_api_gateway_rest_api.kinesis_proxy[each.key].id
+  parent_id   = aws_api_gateway_resource.stream[each.key].id
   path_part   = "record"
 }
 
 resource "aws_api_gateway_method" "put_record" {
-  rest_api_id   = aws_api_gateway_rest_api.kinesis_proxy.id
-  resource_id   = aws_api_gateway_resource.record.id
+  for_each      = { for k, v in var.service_apps : k => v }
+  rest_api_id   = aws_api_gateway_rest_api.kinesis_proxy[each.key].id
+  resource_id   = aws_api_gateway_resource.record[each.key].id
   http_method   = "PUT"
   authorization = "NONE"
   //   api_key_required = true
 }
 
 resource "aws_api_gateway_integration" "put_record" {
-  rest_api_id             = aws_api_gateway_rest_api.kinesis_proxy.id
-  resource_id             = aws_api_gateway_resource.record.id
-  http_method             = aws_api_gateway_method.put_record.http_method
+  for_each                = { for k, v in var.service_apps : k => v }
+  rest_api_id             = aws_api_gateway_rest_api.kinesis_proxy[each.key].id
+  resource_id             = aws_api_gateway_resource.record[each.key].id
+  http_method             = aws_api_gateway_method.put_record[each.key].http_method
   type                    = "AWS"
   integration_http_method = "POST"
   uri                     = "arn:aws:apigateway:${data.aws_region.current.name}:kinesis:action/PutRecord"
@@ -39,18 +42,20 @@ EOF
 }
 
 resource "aws_api_gateway_method_response" "put_record_ok" {
+  for_each    = { for k, v in var.service_apps : k => v }
   depends_on  = ["aws_api_gateway_method.put_record"]
-  rest_api_id = aws_api_gateway_rest_api.kinesis_proxy.id
-  resource_id = aws_api_gateway_resource.record.id
-  http_method = aws_api_gateway_method.put_record.http_method
+  rest_api_id = aws_api_gateway_rest_api.kinesis_proxy[each.key].id
+  resource_id = aws_api_gateway_resource.record[each.key].id
+  http_method = aws_api_gateway_method.put_record[each.key].http_method
   status_code = "200"
 }
 
 resource "aws_api_gateway_integration_response" "put_record" {
-  rest_api_id = aws_api_gateway_rest_api.kinesis_proxy.id
-  resource_id = aws_api_gateway_resource.record.id
-  http_method = aws_api_gateway_method.put_record.http_method
-  status_code = aws_api_gateway_method_response.put_record_ok.status_code
+  for_each    = { for k, v in var.service_apps : k => v }
+  rest_api_id = aws_api_gateway_rest_api.kinesis_proxy[each.key].id
+  resource_id = aws_api_gateway_resource.record[each.key].id
+  http_method = aws_api_gateway_method.put_record[each.key].http_method
+  status_code = aws_api_gateway_method_response.put_record_ok[each.key].status_code
 
   # Passthrough the JSON response
   response_templates = {

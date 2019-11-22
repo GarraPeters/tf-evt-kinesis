@@ -8,6 +8,17 @@ module "kinesis" {
   shard_count = 2
 }
 
+
+module "lambda" {
+  source = "./modules/aws/lambda"
+
+  service_settings = var.service_settings
+  service_apps     = var.service_apps
+
+  aws_kinesis_stream = module.kinesis.aws_kinesis_stream
+}
+
+
 module "api_gateway" {
   source = "./modules/aws/api_gateway"
 

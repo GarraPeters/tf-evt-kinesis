@@ -34,32 +34,33 @@ resource "aws_iam_role_policy" "scheduled_task_ecs_execution" {
 data "aws_region" "current" {}
 
 resource "aws_api_gateway_rest_api" "kinesis_proxy" {
-  // for_each = { for k, v in var.service_apps : k => v }
-  name = "evt-kinesis_proxy"
+  for_each = { for k, v in var.service_apps : k => v }
+  name     = "${each.key}-kinesis_proxy"
 
 }
 
 resource "aws_api_gateway_resource" "streams" {
-
-  rest_api_id = aws_api_gateway_rest_api.kinesis_proxy.id
-  parent_id   = aws_api_gateway_rest_api.kinesis_proxy.root_resource_id
+  for_each    = { for k, v in var.service_apps : k => v }
+  rest_api_id = aws_api_gateway_rest_api.kinesis_proxy[each.key].id
+  parent_id   = aws_api_gateway_rest_api.kinesis_proxy[each.key].root_resource_id
   path_part   = "streams"
 }
 
 resource "aws_api_gateway_method" "list_streams" {
-
-  rest_api_id   = aws_api_gateway_rest_api.kinesis_proxy.id
-  resource_id   = aws_api_gateway_resource.streams.id
+  for_each      = { for k, v in var.service_apps : k => v }
+  rest_api_id   = aws_api_gateway_rest_api.kinesis_proxy[each.key].id
+  resource_id   = aws_api_gateway_resource.streams[each.key].id
   http_method   = "GET"
   authorization = "NONE"
   // api_key_required = true
 }
 
 resource "aws_api_gateway_integration" "list_streams" {
+  for_each = { for k, v in var.service_apps : k => v }
 
-  rest_api_id             = aws_api_gateway_rest_api.kinesis_proxy.id
-  resource_id             = aws_api_gateway_resource.streams.id
-  http_method             = aws_api_gateway_method.list_streams.http_method
+  rest_api_id             = aws_api_gateway_rest_api.kinesis_proxy[each.key].id
+  resource_id             = aws_api_gateway_resource.streams[each.key].id
+  http_method             = aws_api_gateway_method.list_streams[each.key].http_method
   type                    = "AWS"
   integration_http_method = "POST"
   uri                     = "arn:aws:apigateway:${data.aws_region.current.name}:kinesis:action/ListStreams"
@@ -79,20 +80,22 @@ EOF
 }
 
 resource "aws_api_gateway_method_response" "list_streams_ok" {
+  for_each = { for k, v in var.service_apps : k => v }
 
   depends_on  = ["aws_api_gateway_method.list_streams"]
-  rest_api_id = aws_api_gateway_rest_api.kinesis_proxy.id
-  resource_id = aws_api_gateway_resource.streams.id
-  http_method = aws_api_gateway_method.list_streams.http_method
+  rest_api_id = aws_api_gateway_rest_api.kinesis_proxy[each.key].id
+  resource_id = aws_api_gateway_resource.streams[each.key].id
+  http_method = aws_api_gateway_method.list_streams[each.key].http_method
   status_code = "200"
 }
 
 resource "aws_api_gateway_integration_response" "list_streams_ok" {
+  for_each = { for k, v in var.service_apps : k => v }
 
-  rest_api_id = aws_api_gateway_rest_api.kinesis_proxy.id
-  resource_id = aws_api_gateway_resource.streams.id
-  http_method = aws_api_gateway_method.list_streams.http_method
-  status_code = aws_api_gateway_method_response.list_streams_ok.status_code
+  rest_api_id = aws_api_gateway_rest_api.kinesis_proxy[each.key].id
+  resource_id = aws_api_gateway_resource.streams[each.key].id
+  http_method = aws_api_gateway_method.list_streams[each.key].http_method
+  status_code = aws_api_gateway_method_response.list_streams_ok[each.key].status_code
 
   # Passthrough the JSON response
   response_templates = {

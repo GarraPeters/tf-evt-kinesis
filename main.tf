@@ -13,11 +13,10 @@ module "service" {
   }
 
   service_apps = {
-    "sch_123" = {
-      service  = "evt_scheduled_01"
-      image    = "hello-world"
-      port     = "80"
-      schedule = "cron(0/5 * * * ? *)"
+    "api_123" = {
+      stream_name      = "evt_stream_1"
+      shard_count      = "3"
+      retention_period = "48"
     }
   }
 
