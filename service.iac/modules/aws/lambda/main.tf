@@ -83,6 +83,12 @@ resource "aws_lambda_function" "lambda" {
   }
 }
 
+resource "aws_cloudwatch_log_group" "lambda_logging" {
+  for_each          = { for k, v in var.service_apps : k => v }
+  name              = "/aws/lambda/evt-${each.key}-LambdaStreamToFirehose"
+  retention_in_days = 14
+}
+
 resource "aws_lambda_event_source_mapping" "event" {
   for_each          = { for k, v in var.service_apps : k => v }
   batch_size        = 100
